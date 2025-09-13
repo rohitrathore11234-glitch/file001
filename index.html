@@ -1,0 +1,490 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geolocation Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .header {
+            background: #4f46e5;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header p {
+            margin-top: 8px;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 25px;
+        }
+
+        .buttons {
+            margin-bottom: 25px;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 20px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .result-label {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .result-value {
+            font-family: 'Courier New', monospace;
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .status.success {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .status.info {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .webhook-info {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 25px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .webhook-info h3 {
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .webhook-url {
+            font-family: 'Courier New', monospace;
+            background: #e5e7eb;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            word-break: break-all;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .history {
+            margin-top: 25px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            background: #f8fafc;
+        }
+
+        .history h3 {
+            margin-bottom: 12px;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-success {
+            color: #047857;
+        }
+
+        .history-error {
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                </svg>
+                Location Tracker
+            </h1>
+            <p>Automatic webhook integration enabled</p>
+        </div>
+
+        <div class="content">
+            <div class="buttons">
+                <button class="btn-primary" id="getLocationBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    Get My Location
+                </button>
+                
+                <button class="btn-secondary" id="copyBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    Copy Coordinates
+                </button>
+            </div>
+
+            <div class="results">
+                <div class="result-item">
+                    <span class="result-label">Latitude:</span>
+                    <span class="result-value" id="latitudeValue">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Longitude:</span>
+                    <span class="result-value" id="longitudeValue">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Accuracy:</span>
+                    <span class="result-value" id="accuracyValue">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Last Updated:</span>
+                    <span class="result-value" id="timestampValue">-</span>
+                </div>
+            </div>
+
+            <div id="statusMessage" class="status info" style="display: none;">
+                Ready to get your location
+            </div>
+
+            <div class="webhook-info">
+                <h3>Webhook Configuration:</h3>
+                <div class="webhook-url" id="webhookUrlDisplay">https://your-webhook-server.com/api/location</div>
+            </div>
+
+            <div class="history">
+                <h3>Activity Log</h3>
+                <div id="historyContainer">
+                    <div class="history-item">Waiting for location request...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =================================================================
+        // CONFIGURE YOUR WEBHOOK URL HERE
+        // Replace this URL with your actual webhook endpoint
+        const WEBHOOK_URL = "https://webhook.site/#!/view/d3253447-4816-4a4c-a0c2-9cd53f5dd6af";
+        // =================================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const getLocationBtn = document.getElementById('getLocationBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const latitudeValue = document.getElementById('latitudeValue');
+            const longitudeValue = document.getElementById('longitudeValue');
+            const accuracyValue = document.getElementById('accuracyValue');
+            const timestampValue = document.getElementById('timestampValue');
+            const statusMessage = document.getElementById('statusMessage');
+            const historyContainer = document.getElementById('historyContainer');
+            const webhookUrlDisplay = document.getElementById('webhookUrlDisplay');
+
+            let currentCoordinates = null;
+
+            // Display the configured webhook URL
+            webhookUrlDisplay.textContent = WEBHOOK_URL;
+
+            // Check if browser supports geolocation
+            if (!navigator.geolocation) {
+                showStatus("Geolocation is not supported by your browser", "error");
+                getLocationBtn.disabled = true;
+                addToHistory("Error: Geolocation API not supported", "error");
+            } else {
+                addToHistory("System ready. Geolocation supported.", "success");
+            }
+
+            getLocationBtn.addEventListener('click', getLocation);
+            copyBtn.addEventListener('click', copyToClipboard);
+
+            function getLocation() {
+                if (!WEBHOOK_URL || WEBHOOK_URL === "https://your-webhook-server.com/api/location") {
+                    showStatus("https://webhook.site/#!/view/d3253447-4816-4a4c-a0c2-9cd53f5dd6af", "error");
+                    addToHistory("Error: Webhook URL not configured", "error");
+                    return;
+                }
+
+                showStatus("Getting your location...", "info");
+                getLocationBtn.innerHTML = '<div class="spinner"></div> Locating...';
+                getLocationBtn.disabled = true;
+                copyBtn.disabled = true;
+
+                addToHistory("Requesting location permission...", "info");
+
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        // Success callback
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const accuracy = position.coords.accuracy;
+                        const timestamp = new Date().toLocaleString();
+                        
+                        currentCoordinates = { lat, lng, accuracy, timestamp };
+                        
+                        // Update UI with location data
+                        latitudeValue.textContent = lat.toFixed(6);
+                        longitudeValue.textContent = lng.toFixed(6);
+                        accuracyValue.textContent = `${accuracy.toFixed(2)} meters`;
+                        timestampValue.textContent = timestamp;
+                        
+                        // Send to webhook
+                        sendToWebhook({ 
+                            latitude: lat, 
+                            longitude: lng, 
+                            accuracy: accuracy,
+                            timestamp: new Date().toISOString(),
+                            device: navigator.userAgent,
+                            source: "geolocation-webhook"
+                        });
+                        
+                        showStatus("Location retrieved successfully!", "success");
+                        resetButtons();
+                        addToHistory(`Location acquired: ${lat.toFixed(6)}, ${lng.toFixed(6)}`, "success");
+                    },
+                    function(error) {
+                        // Error callback
+                        let errorMessage;
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = "Location access denied by user";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = "Location information unavailable";
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = "Location request timed out";
+                                break;
+                            default:
+                                errorMessage = "An unknown error occurred";
+                                break;
+                        }
+                        
+                        showStatus(errorMessage, "error");
+                        resetButtons();
+                        addToHistory(`Error: ${errorMessage}`, "error");
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 0
+                    }
+                );
+            }
+
+            function sendToWebhook(data) {
+                showStatus("Sending to webhook...", "info");
+                addToHistory("Sending coordinates to webhook...", "info");
+
+                fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Webhook error: ${response.status} ${response.statusText}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    showStatus("Data sent to webhook successfully!", "success");
+                    addToHistory(`Success: Coordinates sent to webhook`, "success");
+                })
+                .catch(error => {
+                    showStatus(`Failed to send to webhook: ${error.message}`, "error");
+                    addToHistory(`Error: ${error.message}`, "error");
+                });
+            }
+
+            function copyToClipboard() {
+                if (!currentCoordinates) {
+                    showStatus("No coordinates to copy", "error");
+                    return;
+                }
+                
+                const text = `Latitude: ${currentCoordinates.lat.toFixed(6)}, Longitude: ${currentCoordinates.lng.toFixed(6)}`;
+                
+                navigator.clipboard.writeText(text).then(() => {
+                    showStatus("Coordinates copied to clipboard!", "success");
+                    addToHistory("Coordinates copied to clipboard", "success");
+                }).catch(err => {
+                    showStatus("Failed to copy coordinates", "error");
+                    addToHistory("Error: Failed to copy coordinates", "error");
+                });
+            }
+
+            function resetButtons() {
+                getLocationBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg> Get My Location';
+                getLocationBtn.disabled = false;
+                copyBtn.disabled = false;
+            }
+
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = `status ${type}`;
+                statusMessage.style.display = 'block';
+                
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        statusMessage.style.display = 'none';
+                    }, 5000);
+                }
+            }
+
+            function addToHistory(message, type = "info") {
+                const historyItem = document.createElement('div');
+                historyItem.className = `history-item ${type === 'success' ? 'history-success' : type === 'error' ? 'history-error' : ''}`;
+                
+                const timestamp = new Date().toLocaleTimeString();
+                historyItem.textContent = `[${timestamp}] ${message}`;
+                
+                // Keep only last 10 history items
+                if (historyContainer.children.length >= 10) {
+                    historyContainer.removeChild(historyContainer.lastChild);
+                }
+                
+                historyContainer.prepend(historyItem);
+            }
+        });
+    </script>
+</body>
+</html>
